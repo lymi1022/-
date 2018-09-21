@@ -1,0 +1,132 @@
+/* 分页插件 */
+.ui-pagination-container {
+	height: 34px;
+	line-height: 34px;
+}
+.ui-pagination-container input {
+	outline:none;
+	border: 1px solid #d1dbe5;
+	color: #48576a;
+	padding: 3px 0 2px 5px;
+	margin-left: 3px;
+}
+.ui-pagination-container input::-webkit-input-placeholder { /* WebKit browsers */
+	color:    #c5c5c5;
+}
+.ui-pagination-container input:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+	color:    #c5c5c5;
+}
+.ui-pagination-container input::-moz-placeholder { /* Mozilla Firefox 19+ */
+	color:    #c5c5c5;
+}
+.ui-pagination-container input:-ms-input-placeholder { /* Internet Explorer 10+ */
+	color:    #c5c5c5;
+}
+
+.ui-pagination-container .ui-pagination-page-item ,.ui-pagination-container .ui-pagination-page-btn{
+	padding: 4px 10px;
+	font-size: 12px;
+	background: #fff;
+	border: 1px solid #d1dbe5;
+	color: #48576a;
+	margin: 0 3px;
+	text-decoration: none;
+}
+.ui-pagination-container .ui-pagination-page-btn {
+	margin-left: 6px;
+	border-radius: 2px;
+}
+.ui-pagination-container .ui-pagination-page-item:hover,.ui-pagination-container .ui-pagination-page-btn:hover {
+	color: #36af89;;
+	text-decoration: none;
+}
+
+.ui-pagination-container .ui-pagination-page-item.active {
+	background: #6a7398;
+	border-color: #6a7398;
+	color: #fff;
+	cursor: default;
+}
+.page{
+	text-align: center;
+	margin: 30px 0;
+}
+/* 覆盖日历插件样式 */
+.daterangepicker.dropdown-menu {
+  color: #48576a;
+  font-weight: 300;
+  padding: 0;
+  padding-top: 10px;
+}
+.daterangepicker.dropdown-menu th {
+font-weight: 300;
+} 
+.daterangepicker td.active, .daterangepicker td.active:hover {
+  background-color: #36af89!important;
+}
+.daterangepicker td.in-range {
+  background-color: #f3f5fb;
+  color: #48576a;
+}
+.daterangepicker .ranges {
+  margin: 0;
+  padding-top: 6px;
+  background-color: #fbfdff;
+  height: 340px;
+  width: 125px;
+}
+.daterangepicker .ranges ul {
+  margin-bottom: 10px;
+}
+.daterangepicker .ranges li.active {
+  background-color: #e4e8f1;
+  width: 125px;
+}
+.daterangepicker .ranges li {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 6px 12px;
+    margin-bottom: 0;
+    color: #48576a;
+}
+.daterangepicker .ranges li:hover {
+  background-color: #e4e8f1;
+  border: none;
+  width: 125px;
+
+}
+.daterangepicker td.active, .daterangepicker td.active:hover {
+  color: #fff;
+}
+.daterangepicker .ranges .range_inputs {
+  margin-left: 12px;
+}
+.daterangepicker td, .daterangepicker th, .daterangepicker td.start-date, .daterangepicker td.end-date, .daterangepicker td.start-date.end-date {
+  border-radius: 0;
+}
+.daterangepicker .calendar th, .daterangepicker .calendar td {
+  min-width: 36px;
+}
+.daterangepicker select {
+  background: transparent;
+  border:none;
+  outline: none;
+  border: 1px solid #d1dbe5;
+  border-radius: 0;
+  height: 25px;
+}
+.daterangepicker .btn-success {
+  background-color: #36af89;
+  border-color: #4cae4c;
+  border-radius: 1px;
+  margin-right: 4px;
+}
+.daterangepicker .btn-default {
+  border-radius: 1px;
+ 
+}
+.daterangepicker .btn-default:hover {
+ background-color: transparent; 
+ color: #36af89;
+}

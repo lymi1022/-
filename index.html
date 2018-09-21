@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <!--cdn上面的地址-->
+  <link href="http://netdna.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/bootstrap-daterangepicker/2.1.25/daterangepicker.css" rel="stylesheet">
+  <link rel="stylesheet" href="./common_plugin.css" />
+  <link rel="stylesheet" href="./real_time.css">
+</head>
+
+<body>
+  <div id="master-wrap">
+    <div id="m-header">
+      <div class="co-select">
+        <input type="text" class="co-input" oninput="coChange()" autocomplete="off" placeholder="请选择公司">
+        <span class="co-remove">ⓧ</span>
+        <ul class="co-dropdown">
+          <li value="-1" class="select-empty-text">无数据</li>
+        </ul>
+      </div>
+      <div class="lp-select">
+        <input type="text" class="lp-input" oninput="lpChange()" autocomplete="off" placeholder="请选择落地页">
+        <span class="lp-remove">ⓧ</span>
+        <ul class="lp-dropdown">
+          <li value="-1" class="select-empty-text">无数据</li>
+        </ul>
+      </div>
+      <div class="date-range-picker-dropdown">
+        <input type="text" id="date-range-picker-input" class="form-control">
+        <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>
+      </div>
+      <button class="btn-search" onclick="onSearchClick()">实时数据</button>
+      <button class="btn-search" onclick="onSearchReqClick()">请求数</button>
+      <table class="fixed-table">
+        <tr>
+          <td class="fixed-th1">时间</td>
+          <td class="fixed-th2">pid</td>
+          <td class="fixed-th3">uid</td>
+          <td class="fixed-th4">浏览器</td>
+          <td class="fixed-th5">机型</td>
+        </tr>
+      </table>
+      <table class="fixed-table-req">
+          <tr>
+            <td class="fixed-th1">时间</td>
+            <td class="fixed-th2">页面完整加载数</td>
+            <td class="fixed-th3">请求数</td>
+            <td class="fixed-th4">秒关数</td>
+          </tr>
+        </table>
+    </div>
+    <div id="m-body">
+      <table class="lp-table" cellspacing="0" cellpadding="0">
+        <tr>
+          <td>时间</td>
+          <td>pid</td>
+          <td>uid</td>
+          <td>浏览器</td>
+          <td>机型</td>
+        </tr>
+      </table>
+    </div>
+    <div id="m-foot">
+      <span class="pagination-total">总条数: <span class="total"></span></span>
+      <div id="pagination"></div>
+    </div>
+  </div>
+  <!-- 登陆弹出层 -->
+  <div id="login-dialog">
+    <div id="l-content">
+      <div class="dialog-header">
+        <span class="dialog-title">登陆</span>
+      </div>
+      <div class="dialog-body">
+        <div class="tip">您与此网站的连接不是私密连接</div>
+        <div class="item">
+          <span>用户名</span><input type="name" id="username" placeholder="请输入用户名">
+        </div>
+        <div class="item">
+          <span>密码</span><input type="password" id="password" placeholder="请输入密码">
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <button id="cancel">取消</button>
+        <button id="landing" onclick="handleLoginClick()">登陆</button>
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript" src="./jquery-1.11.3.min.js"></script>
+  <script type="text/javascript" src="http://netdna.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+  <script src="https://cdn.bootcss.com/bootstrap-daterangepicker/2.1.25/moment.js"></script>
+  <script src="https://cdn.bootcss.com/bootstrap-daterangepicker/2.1.25/daterangepicker.js"></script>
+  <script type="text/javascript" src="./jquery.pagination.min.js"></script>
+  <script type="text/javascript" src="./call_api.js"></script>
+  <script type="text/javascript" src="./api.js"></script>
+  <script type="text/javascript" src="./utils.js"></script>
+</body>
+
+</html>
+<script>
+  // 作为接口参数
+  let params = {
+    companyId: '',
+    pageId: '',
+    startTime: parseDate(new Date(new Date().setHours(0, 0, 0, 0))),
+    endTime: parseDate(new Date(new Date().setHours(23, 23, 23, 23))),
+    pageNumber: 1,
+    pageSize: 20,
+    sort: 'createdAt',
+    order: 'desc'
+  }
+  // 公司
+  let companyList = []
+  // 落地页
+  let lpList = []
+
+  let dataList = []
+
+  // 判断是否有token，无token弹出层登陆页面
+  isToken()
+
+  function isToken() {
+    let token = window.sessionStorage.getItem('token')
+    if (!token) {
+      showDialog(1)
+    } else {
+      showDialog(0)
+      // 有token初始化数据
+      init()
+      onSearchClick()
+    }
+  }
+
+  function showDialog(s) {
+    if (s > 0) {
+      $('#login-dialog').css('display', 'block')
+      $('#master-wrap').css('display', 'none')
+    } else {
+      $('#login-dialog').css('display', 'none')
+      $('#master-wrap').css('display', 'block')
+    }
+  }
+  
+  // 无token弹出层登陆，点击登陆
+  function handleLoginClick() {
+    let data = {
+      userName: $('#username').val(),
+      password: $('#password').val()
+    }
+    nowLogin(data).then(res => {
+      window.sessionStorage.setItem('token', res.token)
+      isToken()
+    }).catch(err => {
+      $("#login-dialog").css('display', 'none')
+      setTimeout(() => {
+        $('#username').val('')
+        $('#password').val('')
+        $("#login-dialog").css('display', 'block')
+        isToken()
+      }, 200)
+    })
+  }
+
+  function onSearchReqClick() {
+    $('.fixed-table').css('display', 'none')
+    $('.fixed-table-req').css('display', 'block')
+    getTableReqList(params).then(res => {
+      dataList = res.rows
+      setTableReqDom(dataList, res)
+
+      $("#m-foot #pagination").pagination({
+        currentPage: res.pageNumber,
+        totalPage: res.totalPages,
+        callback: function (current) {
+          params.pageNumber = current
+          onSearchReqClick()
+        }
+      })
+    })
+  }
+  // 查询数据
+  function onSearchClick() {
+    $('.fixed-table-req').css('display', 'none')
+    $('.fixed-table').css('display', 'block')
+    getTableList(params).then(res => {
+      dataList = res.rows
+      setTableDom(dataList, res)
+
+      $("#m-foot #pagination").pagination({
+        currentPage: res.pageNumber,
+        totalPage: res.totalPages,
+        callback: function (current) {
+          params.pageNumber = current
+          onSearchClick()
+        }
+      })
+    })
+  }
+
+  function setTableDom(dataList, res) {
+    let $table = $('.lp-table')
+    $('.total').text(res.total)
+    if (dataList.length === 0) {
+      $('.lp-table').html('')
+      let table = `<tr><td>暂无数据</td></tr><tr><td style="text-align: center; color: #999;">暂无数据</td></tr>`
+      $('.lp-table').html(table)
+    } else {
+      let str =
+      `<tr>
+        <td>时间</td>
+        <td>pid</td>
+        <td>uid</td>
+        <td>浏览器</td>
+        <td>机型</td>
+      </tr>`
+    for (let i = 0; i < dataList.length; i++) {
+      let times = parseDate(dataList[i].createdAt)
+      let timesArr = times.split(' ')
+
+      str +=
+        `<tr><td><div class="times-arr-0">${timesArr[0]}</div><div class="times-arr-1">${timesArr[1]}</div></td><td>${dataList[i].pid}</td><td>${dataList[i].uid}</td><td>${dataList[i].device}</td><td>${dataList[i].browser}</td></tr>`
+    }
+      $table.html(str)
+    }
+    fixedThStyle()
+  }
+
+  function setTableReqDom(dataList, res) {
+    let $table = $('.lp-table')
+    $('.total').text(res.total)
+    if (dataList.length === 0) {
+      $('.lp-table').html('')
+      let table = `<tr><td>暂无数据</td></tr><tr><td style="text-align: center; color: #999;">暂无数据</td></tr>`
+      $('.lp-table').html(table)
+    } else {
+      let str =
+      `<tr>
+        <td>时间</td>
+        <td>页面完整加载数</td>
+        <td>请求数</td>
+        <td>秒关数</td>
+      </tr>`
+    for (let i = 0; i < dataList.length; i++) {
+      let times = parseDate(dataList[i].createdAt)
+      let timesArr = times.split(' ')
+
+      str +=
+        `<tr><td><div class="times-arr-0">${timesArr[0]}</div><div class="times-arr-1">${timesArr[1]}</div></td><td>${dataList[i].pv}</td><td>${dataList[i].reqNum}</td><td>${dataList[i].secOffNum}</td></tr>`
+    }
+      $table.html(str)
+    }
+    fixedThStyle()
+  }
+
+  // 搜索公司、落地页
+  let companySearch = debounce(coChangeFn, 500)
+  let lpSearch = debounce(lpChangeFn, 500)
+
+  function coChange() {
+    companySearch()
+  }
+
+  function lpChange() {
+    lpSearch()
+  }
+
+  function match(m) {
+    return new RegExp(`${m}`, `gi`)
+  }
+
+  function coChangeFn() {
+    let companyArr = (companyList || []).filter(i => {
+      return i.name.search(match($('.co-input').val().trim())) !== -1
+    })
+    setSelectDom($('.co-dropdown'), companyArr)
+  }
+
+  function lpChangeFn() {
+    let lpArr = (lpList || []).filter(i => {
+      return i.name.search(match($('.lp-input').val().trim())) !== -1
+    })
+    setSelectDom($('.lp-dropdown'), lpArr)
+  }
+
+  function fixedThStyle() {
+    if (dataList.length > 0) {
+      let th1 = $('.lp-table').find('td')[0].clientWidth
+      let th2 = $('.lp-table').find('td')[1].clientWidth
+      let th3 = $('.lp-table').find('td')[2].clientWidth
+      let th4 = $('.lp-table').find('td')[3].clientWidth
+      let th5 = $('.lp-table').find('td')[4].clientWidth
+      // 20是padding的值
+      $('.fixed-th1').width(th1 - 20)
+      $('.fixed-th2').width(th2 - 20)
+      $('.fixed-th3').width(th3 - 20)
+      $('.fixed-th4').width(th4 - 20)
+      $('.fixed-th5').width(th5 - 20)
+    } else {
+      $('.fixed-th1,.fixed-th2,.fixed-th3,.fixed-th4,.fixed-th5').width('auto')
+    }
+  }
+
+  // 数据初始化
+  function init() {
+    let $coDropdown = $('.co-dropdown')
+    let $lpDropdown = $('.lp-dropdown')
+    let $coInput = $('.co-input')
+    let $lpInput = $('.lp-input')
+    let $coRemove = $('.co-remove')
+    let $lpRemove = $('.lp-remove')
+    let $coSelect = $('.co-select')
+    let $lpSelect = $('.lp-select')
+    
+    // 获取公司
+    getCompanyFn()
+    function getCompanyFn() {
+      getCompany().then(res => {
+        companyList = res
+        setSelectDom($coDropdown, companyList)
+      })
+    }
+    // 获取落地页
+    function getLpFn() {
+      getLp(params.companyId).then(res => {
+        lpList = res
+        $lpDropdown.html('')
+        setSelectDom($lpDropdown, lpList)
+      })
+    }
+    $coInput.focus(function () {
+      $coDropdown.css('display', 'block')
+    })
+
+    $coDropdown.click(function (e) {
+      clearParams()
+      if (e.target.value != '-1') {
+        $coInput.val(e.target.textContent)
+      }
+      params.companyId = e.target.value
+      $coDropdown.css('display', 'none')
+      // 获取落地页
+      getLpFn()
+    })
+    
+    // 重新获取公司，防止是通过搜索获取的会记住搜索的companyId
+    $coRemove.click(function() {
+      clearParams()
+      getCompanyFn()
+    })
+
+    $coSelect.hover(function() {
+      if (!params.companyId) {
+        $coRemove.css('display','none')
+      } else {
+        $coRemove.css('display','block')
+      }
+    })
+
+    $lpInput.focus(function () {
+      $lpDropdown.css('display', 'block')
+    })
+
+    $lpDropdown.click(function (e) {
+      if (e.target.value != '-1') {
+        params.pageId = e.target.value
+        $lpInput.val(e.target.textContent)
+        $lpDropdown.css('display', 'none')
+      }
+    })
+    
+    $lpRemove.click(function() {
+      getLpFn()
+      $lpRemove.css('display', 'none')
+      $lpInput.val('')
+      params.pageId = ''
+    })
+
+    $lpSelect.hover(function() {
+      if (!params.pageId) {
+        $lpRemove.css('display','none')
+      } else {
+        $lpRemove.css('display','block')
+      }
+    })
+
+    function clearParams() {
+      $coInput.val('')
+      $lpInput.val('')
+      params.companyId = ''
+      params.pageId = ''
+      $coRemove.css('display', 'none')
+      $lpRemove.css('display', 'none')
+      // X掉公司时，公司对应的落地页也要清空
+      lpList = []
+      setSelectDom($lpDropdown, lpList)
+      // params.startTime = ''
+      // params.endTime = ''
+    }
+
+    $('#date-range-picker-input').daterangepicker({
+      "timePicker": true,
+      "timePicker24Hour": true,
+      "timePickerSeconds": true,
+      "autoApply": true,
+      "timePicker": true,
+      "autoApply": true,
+      "alwaysShowCalendars": true,
+      "locale": {
+        format: 'YYYY-MM-DD HH:mm:ss',
+        applyLabel: "确定",
+        cancelLabel: "取消",
+        customRangeLabel: "自定义时间",
+        daysOfWeek: ["日", "一", "二", "三", "四", "五", "六"],
+        monthNames: ["1月", "2月", "3月", "4月", "5月", "6月",
+          "7月", "8月", "9月", "10月", "11月", "12月"
+        ],
+      },
+      ranges: {
+        "今天": [new Date(new Date().setHours(0, 0, 0, 0)), new Date(new Date().setHours(23, 23, 23, 23))],
+        "最近一周": [new Date(new Date().setHours(0, 0, 0, 0)) - 3600 * 1000 * 24 * 7, new Date(new Date().setHours(23,
+          23, 23, 23))],
+        "最近一个月": [new Date(new Date().setHours(0, 0, 0, 0)) - 3600 * 1000 * 24 * 30, new Date(new Date().setHours(
+          23, 23, 23, 23))],
+        "最近三个月": [new Date(new Date().setHours(0, 0, 0, 0)) - 3600 * 1000 * 24 * 90, new Date(new Date().setHours(
+          23, 23, 23, 23))]
+      },
+    }, function (start, end, label) {
+      params.startTime = this.startDate.format(this.locale.format)
+      params.endTime = this.endDate.format(this.locale.format)
+      // console.log(this.endDate.format(this.locale.format));
+      if (!this.startDate) {
+        this.element.val('');
+      } else {
+        this.element.val(this.startDate.format(this.locale.format) + this.locale.separator + this.endDate.format(
+          this.locale.format));
+      }
+    })
+  }
+
+  // select框Dom填充
+  function setSelectDom($dom, res) {
+    let str = ''
+    if (res.length > 0) {
+      for (let i = 0; i < res.length; i++) {
+        str += `<li value="${res[i].id}" title="${res[i].name}">${res[i].name}</li>`
+      }
+    } else {
+      str = '<li value="-1" class="select-empty-text">无数据</li>'
+    }
+    $dom.html(str)
+  }
+
+  // 点击空白处下拉框隐藏
+  $(document).click(function (e) {
+    var _con = $('.co-input');
+    var _ul = $('.co-dropdown')
+    var _con1 = $('.lp-input');
+    var _ul1 = $('.lp-dropdown')
+
+    if ((!_con.is(e.target) && _con.has(e.target).length === 0) && (!_ul.is(e.target) && _ul.has(e.target).length ===
+        0)) {
+      $('.co-dropdown').css('display', 'none')
+    }
+    if ((!_con1.is(e.target) && _con1.has(e.target).length === 0) && (!_ul1.is(e.target) && _ul1.has(e.target).length ===
+        0)) {
+      $('.lp-dropdown').css('display', 'none')
+    }
+  })
+
+  // 窗口改变设置表头定位
+  $(window).resize(function () {
+    fixedThStyle()
+  })
+
+  // 滚动条滚动表头定位
+  $(window).scroll(function (e) {
+    let bounding = $('.lp-table')[0].getBoundingClientRect()
+    $('#master-wrap #m-header').css('left', bounding.left)
+  })
+</script>
